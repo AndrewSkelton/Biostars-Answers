@@ -60,5 +60,5 @@ gg    <- ggplot(df, aes(x = logFC, y = `-log10PVal`, colour = Sig)) +
 print(gg)
 ```
 
-
+![alt text](https://github.com/AndrewSkelton/Biostars-Answers/blob/master/Sakura_Volcano.png "Volcano Plot")
 
