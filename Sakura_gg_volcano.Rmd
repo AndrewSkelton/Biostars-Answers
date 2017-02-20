@@ -1,0 +1,64 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Load libraries
+ggplot2 as our plotting library, dplyr to do a bit of data manipulation, ggrapel for fancy gene labels, IlluminaHumanv4.db as our reference database, and DBI as a utility package. 
+
+```{r load_libraries}
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+library(illuminaHumanv4.db)
+library(DBI)
+```
+
+## Prepping the Data
+Firstly we'll set our log fold change and p value cutoffs with the `lfc` and `pval` variables. The logFC cutoff is set to log2, as that's what we'll be using in the plot, likewise for the -log10 transformation of the p value. Next we grab the annotation from the `illuminaHumanv4.db` package, using the `illuminaHumanv4fullReannotation` function. We `slice` that dataframe to only include IDs from our differential expression table, and just extract the Illumina ID / Gene Symbol for convenience. The `inter` variable, is a vector of gene symbols that we want to be shown on our volcano plot. 
+
+The `df` variable is a little more complex, but in order; convert the DE list to a dataframe, add the rownames as a variable (and call it `IlluminaID`), transform the adjusted P values to `-log10`, select only the Illumina ID, logFC and -log10 transformed p values. Now we have a simplified set of information for the volcano plot, we need some annotation, which is made easy until the `left_join` function. Finally, we set up two variables (`sig`/`SymbolPlot`), to show significant observations, and genes to label on the plot. 
+
+```{r data_prep}
+load("~/Downloads/ForAndrew.RData")
+
+lfc   <- log2(1.5)
+pval  <- -log10(0.05)
+
+anno  <- illuminaHumanv4fullReannotation() %>% 
+         as.data.frame %>% 
+         dplyr::slice(match(rownames(gene_list) %>% as.vector,IlluminaID)) %>% 
+         dplyr::select(IlluminaID,Symbol=SymbolReannotated)
+
+inter <- c("GSTP1", "KAT2B")
+
+df    <- gene_list %>% 
+         as.data.frame %>% 
+         add_rownames("IlluminaID") %>% 
+         mutate(`-log10PVal` = -log10(`adj.P.Val`)) %>% 
+         dplyr::select(IlluminaID,logFC,`-log10PVal`) %>% 
+         left_join(anno) %>% 
+         mutate(SymbolPlot = ifelse(Symbol %in% inter, Symbol, ""),
+                Sig = ifelse((abs(logFC) > lfc & `-log10PVal` > pval), "Sig", ""))
+df
+```
+
+
+## Making a Volcano
+Starting off simply, the x axis is the logFC, and the y axis is the -log10 transformed p value, additionally we colour by the `Sig` variable. Next we want to make points on our plot, and set the theme, followed by lines to illustrate cutoffs. The rest should be fairly straightforward. 
+
+```{r volcano_plot}
+gg    <- ggplot(df, aes(x = logFC, y = `-log10PVal`, colour = Sig)) +
+         geom_point() + theme_bw() + 
+         geom_hline(yintercept = pval, colour = "red") +
+         geom_vline(xintercept = c(lfc,-lfc), colour = "red") +
+         scale_colour_manual(values = c("black", "red")) +
+         ylab("-log10(Adjusted P Value)") +
+         geom_text_repel(aes(label = df$SymbolPlot)) + 
+         ggtitle("Volcano Plot of Differentially Expressed Genes\nIllumina HT12-v4 Microarray")
+                         
+print(gg)
+```
+
+
+
