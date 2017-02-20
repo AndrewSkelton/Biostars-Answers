@@ -30,7 +30,8 @@ anno  <- illuminaHumanv4fullReannotation() %>%
          dplyr::slice(match(rownames(gene_list) %>% as.vector,IlluminaID)) %>% 
          dplyr::select(IlluminaID,Symbol=SymbolReannotated)
 
-inter <- c("GSTP1", "KAT2B")
+# inter <- c("GSTP1", "KAT2B")
+# ifelse(Symbol %in% inter, Symbol, "")
 
 df    <- gene_list %>% 
          as.data.frame %>% 
@@ -38,8 +39,8 @@ df    <- gene_list %>%
          mutate(`-log10PVal` = -log10(`adj.P.Val`)) %>% 
          dplyr::select(IlluminaID,logFC,`-log10PVal`) %>% 
          left_join(anno) %>% 
-         mutate(SymbolPlot = ifelse(Symbol %in% inter, Symbol, ""),
-                Sig = ifelse((abs(logFC) > lfc & `-log10PVal` > pval), "Sig", ""))
+         mutate(Sig = ifelse((abs(logFC) > lfc & `-log10PVal` > pval), "Sig", ""),
+                SymbolPlot = ifelse(`-log10PVal` > pval, Symbol, ""))
 df
 ```
 
