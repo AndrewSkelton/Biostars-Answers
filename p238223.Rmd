@@ -7,13 +7,14 @@ output: html_notebook
 ```{r}
 library(dplyr)
 
-df           <- data.frame(matrix(ncol = 4, nrow = 10))
+df           <- data.frame(matrix(ncol = 4, nrow = 20))
 colnames(df) <- c("chr","start","end","meth")
 
-df$chr       <- c(rep("chr7",10))
-df$start     <- c(31441,31467,50060,50097,50147,50158,50164,50355,75862,79874)
+df$chr       <- c(rep("chr7",10),rep("chr10",10))
+df$start     <- c(31441,31467,50060,50097,50147,50158,50164,50355,75862,79874,
+                  31446,31467,50080,50099,50148,50160,50163,50352,75867,79879)
 df$end       <- df$start 
-df$meth      <- runif(10, min = 0, max = 1)
+df$meth      <- runif(20, min = 0, max = 1)
 
 bin          <- 10000
 
@@ -23,16 +24,20 @@ df2          <- df %>%
                 summarise(median = median(meth)) %>%
                 mutate(start = (window*bin)+1, stop=(window+1)*bin) 
 
-missing_win  <- setdiff(0:max(df2$window),unique(df2$window))
-df_out       <- data.frame(window = missing_win) %>% 
-                mutate(chr    = unique(df2$chr),
-                       median = NA,
-                       start  = (window*bin)+1, 
-                       stop   = (window+1)*bin) %>% 
-                bind_rows(df2) %>% 
-                arrange(window)
-
-df_out
+df_out       <- c()
+for(i in unique(df2$chr)) {
+  df2_tmp      <- df2 %>% filter(chr == i)
+  missing_win  <- setdiff(0:max(df2_tmp$window),unique(df2_tmp$window))
+  df_tmp       <- data.frame(window = missing_win) %>% 
+                  mutate(chr    = i,
+                         median = NA,
+                         start  = (window*bin)+1, 
+                         stop   = (window+1)*bin) %>% 
+                  bind_rows(df2_tmp) %>% 
+                  arrange(chr,window)
+  df_out       <- bind_rows(df_out,df_tmp)
+}
+df_out %>% arrange(desc(chr), window)
 ```
 
 
