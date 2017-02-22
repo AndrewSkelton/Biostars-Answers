@@ -15,19 +15,24 @@ df$start     <- c(31441,31467,50060,50097,50147,50158,50164,50355,75862,79874)
 df$end       <- df$start 
 df$meth      <- runif(10, min = 0, max = 1)
 
-bin          <- 1000
+bin          <- 10000
 
 df2          <- df %>% 
                 mutate(window = start %/% bin) %>% 
                 group_by(window,chr) %>%
                 summarise(median = median(meth)) %>%
-                mutate(start = window*bin, stop=(window+1)*bin) %>% 
-                ungroup %>% 
-                mutate_each(funs(factor),window)
+                mutate(start = (window*bin)+1, stop=(window+1)*bin) 
 
-levels(df2$window) <- 0:(length(levels(df2$window)))
+missing_win  <- setdiff(0:max(df2$window),unique(df2$window))
+df_out       <- data.frame(window = missing_win) %>% 
+                mutate(chr    = unique(df2$chr),
+                       median = NA,
+                       start  = (window*bin)+1, 
+                       stop   = (window+1)*bin) %>% 
+                bind_rows(df2) %>% 
+                arrange(window)
 
-df2
+df_out
 ```
 
 
