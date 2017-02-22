@@ -1,0 +1,33 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(dplyr)
+
+df           <- data.frame(matrix(ncol = 4, nrow = 10))
+colnames(df) <- c("chr","start","end","meth")
+
+df$chr       <- c(rep("chr7",10))
+df$start     <- c(31441,31467,50060,50097,50147,50158,50164,50355,75862,79874)
+df$end       <- df$start 
+df$meth      <- runif(10, min = 0, max = 1)
+
+bin          <- 1000
+
+df2          <- df %>% 
+                mutate(window = start %/% bin) %>% 
+                group_by(window,chr) %>%
+                summarise(median = median(meth)) %>%
+                mutate(start = window*bin, stop=(window+1)*bin) %>% 
+                ungroup %>% 
+                mutate_each(funs(factor),window)
+
+levels(df2$window) <- 0:(length(levels(df2$window)))
+
+df2
+```
+
+
